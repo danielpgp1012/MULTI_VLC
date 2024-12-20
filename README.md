@@ -35,12 +35,11 @@
 
 ## 🛠️ **Uso**
 1. Abre **Multi VLC Manager** desde el acceso directo en el escritorio o el menú Inicio.
-   <br>
-   <img src="./assets/app_preview.jpg" alt="App Icon" width="200" />
-
+      <br>
+   <img src="./assets/multi_vlc_icon.ico" alt="App icon" width="200" /> 
 2. Haz clic en **"Abrir Ventanas VLC"** para seleccionar un archivo de video.
    <br>
-   <img src="./assets/multi_vlc_icon.ico" alt="App icon" width="200" />
+   <img src="./assets/app_preview.jpg" alt="App Icon" width="200" />
 
 3. La aplicación abrirá tres instancias de VLC.
 4. Selecciona los idiomas y canales correctos en cada ventana.
