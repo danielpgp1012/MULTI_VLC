@@ -34,8 +34,10 @@
 ## 🛠️ **Uso**
 1. Abre **Multi VLC Manager** desde el acceso directo en el escritorio o el menú Inicio.
 ![Icon](./assets/multi_vlc_icon.ico)
+
 2. Haz clic en **"Abrir Ventanas VLC"** para seleccionar un archivo de video.
 ![App Preview](./assets/app_preview.jpg)
+
 3. La aplicación abrirá tres instancias de VLC.
 4. Selecciona los idiomas y canales correctos en cada ventana.
 5. Haz clic en **"Reproducir Videos"** para iniciar la reproducción simultánea en las tres ventanas.
