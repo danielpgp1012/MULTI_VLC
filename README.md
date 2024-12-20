@@ -23,7 +23,7 @@
 
 ## 🚀 **Instalación**
 1. **Descarga el instalador**:
-   - Descarga el archivo `MultiVLCManagerSetup.exe` desde la [página de releases](https://github.com/danielpgp1012/multi-vlc-manager/releases).
+   - Descarga el archivo `MultiVLCManagerSetup.exe` desde la [página de releases](https://github.com/danielpgp1012/MULTI_VLC/releases).
 2. **Ejecuta el instalador**:
    - Sigue las instrucciones del asistente de instalación.
 3. **Verificación de VLC**:
@@ -79,7 +79,7 @@ Multi VLC Manager/
 ---
 
 ## 📄 **Licencia**
-Este proyecto está bajo la licencia **MIT**. Consulta el archivo [LICENSE](https://github.com/danielpgp1012/multi-vlc-manager/blob/main/LICENSE) para más detalles.
+Este proyecto está bajo la licencia **MIT**. Consulta el archivo [LICENSE](https://github.com/danielpgp1012/MULTI-VLC/blob/main/LICENSE) para más detalles.
 
 ---
 
