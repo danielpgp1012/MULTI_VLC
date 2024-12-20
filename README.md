@@ -24,19 +24,23 @@
 ## 🚀 **Instalación**
 1. **Descarga el instalador**:
    - Descarga el archivo `MultiVLCManagerSetup.exe` desde la [página de releases](https://github.com/danielpgp1012/MULTI_VLC/releases).
-2. **Ejecuta el instalador**:
+  ![Installer Preview](./assets/download_installer_preview.jpg)
+
+1. **Ejecuta el instalador**:
    - Sigue las instrucciones del asistente de instalación.
-3. **Verificación de VLC**:
+2. **Verificación de VLC**:
    - Si VLC no está instalado, el instalador te redirigirá a la página oficial de descarga.
 
 ---
 
 ## 🛠️ **Uso**
 1. Abre **Multi VLC Manager** desde el acceso directo en el escritorio o el menú Inicio.
-![Icon](./assets/multi_vlc_icon.ico)
+   <br>
+   <img src="./assets/app_preview.jpg" alt="App Icon" width="200" />
 
 2. Haz clic en **"Abrir Ventanas VLC"** para seleccionar un archivo de video.
-![App Preview](./assets/app_preview.jpg)
+   <br>
+   <img src="./assets/multi_vlc_icon.ico" alt="App icon" width="200" />
 
 3. La aplicación abrirá tres instancias de VLC.
 4. Selecciona los idiomas y canales correctos en cada ventana.
