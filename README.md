@@ -1,14 +1,14 @@
 # Multi VLC Manager
 (Esta documentación fue generada con modelos de Lenguaje)
 
-**Multi VLC Manager** es una aplicación para Windows que permite abrir múltiples instancias de **VLC Media Player** y reproducir varios archivos de video simultáneamente. Cada ventana puede reproducir un archivo con audio en distintos idiomas, como español, francés e inglés, de forma simultánea.
+**Multi VLC Manager** es una aplicación para Windows que permite abrir múltiples instancias de **VLC Media Player** y reproducir el mismo video en todas de forma sincronizada. Así, un video con varias pistas de audio (por ejemplo español, francés e inglés) puede sonar en todos los idiomas a la vez, cada uno en su propia ventana y salida de audio.
 ---
 
 ## 📋 **Características**
-- Abre **tres instancias de VLC Media Player** al mismo tiempo.
+- Abre **varias instancias de VLC Media Player** al mismo tiempo (3 por defecto, configurable hasta 8).
 - Permite reproducir **videos con diferentes audios** simultáneamente.
 - Interfaz amigable con opciones para abrir y reproducir videos fácilmente.
-- Incluye un instalador para una instalación rápida y sencilla.
+- Instalación sencilla, sin permisos de administrador.
 - Verifica automáticamente si **VLC está instalado** y guía al usuario para descargarlo si no lo está.
 
 ---
@@ -17,19 +17,20 @@
 1. **Sistema Operativo**: Windows 10 o superior.
 2. **Software Requerido**:
    - [VLC Media Player](https://www.videolan.org/vlc/index.html) (versión 3.0 o superior).
-3. **Espacio en Disco**: Al menos 20 MB.
+3. **Espacio en Disco**: Menos de 1 MB.
 
 ---
 
 ## 🚀 **Instalación**
-1. **Descarga el instalador**:
-   - Descarga el archivo `MultiVLCManagerSetup.exe` desde la [página de releases](https://github.com/danielpgp1012/MULTI_VLC/releases).
-  ![Installer Preview](./assets/download_installer_preview.jpg)
+1. **Descarga el ZIP**: en la [página del proyecto](https://github.com/danielpgp1012/MULTI_VLC), haz clic en el botón verde **Code** → **Download ZIP**.
+2. **Desbloquea el ZIP**: clic derecho sobre el archivo descargado → **Propiedades** → marca **Desbloquear** → **Aceptar**. Así Windows no bloqueará los archivos al ejecutarlos.
+3. **Extrae el ZIP** y haz doble clic en **`Instalar.cmd`**.
+   - Si Windows muestra "Windows protegió su PC", haz clic en **Más información** → **Ejecutar de todas formas**.
+4. Se crea el acceso directo **Multi VLC Manager** en el escritorio y en el menú Inicio. La carpeta del ZIP ya se puede borrar.
 
-1. **Ejecuta el instalador**:
-   - Sigue las instrucciones del asistente de instalación.
-2. **Verificación de VLC**:
-   - Si VLC no está instalado, el instalador te redirigirá a la página oficial de descarga.
+Si VLC no está instalado, la aplicación lo indicará al abrirse y abrirá la página oficial de descarga.
+
+**Actualizar**: repite los mismos pasos; `Instalar.cmd` reemplaza la versión anterior.
 
 ---
 
@@ -37,49 +38,40 @@
 1. Abre **Multi VLC Manager** desde el acceso directo en el escritorio o el menú Inicio.
       <br>
    <img src="./assets/multi_vlc_icon.ico" alt="App icon" width="200" /> 
-2. Haz clic en **"Abrir Ventanas VLC"** para seleccionar un archivo de video.
+2. Elige el **número de ventanas** (3 por defecto) y haz clic en **"Abrir Ventanas VLC"** para seleccionar un archivo de video.
    <br>
    <img src="./assets/app_preview.jpg" alt="App Icon" width="200" />
 
-3. La aplicación abrirá tres instancias de VLC.
+3. La aplicación abrirá el número de instancias de VLC elegido. Si ya había ventanas abiertas, preguntará si quieres cerrarlas primero.
 4. Selecciona los idiomas y canales correctos en cada ventana.
-5. Haz clic en **"Reproducir Videos"** para iniciar la reproducción simultánea en las tres ventanas.
+5. Haz clic en **"Reproducir Videos"** para iniciar la reproducción simultánea en todas las ventanas.
 
 ---
 
-### **🛠️ Generar nuevo instalador**
+### **🛠️ Mantenimiento**
 
-1. **Convertir el script PowerShell a ejecutable**:  
-   Usa **PS2EXE** para generar `Multi_vlc.exe`:
-   ```powershell
-   Install-Module -Name ps2exe -Scope CurrentUser
-   Invoke-ps2exe .\MultiVLCManager.ps1 .\Multi_vlc.exe
-   ```
+No hay ejecutable ni paso de compilación: la aplicación es el archivo `multi_vlc.ps1`.
 
-2. **Compilar el instalador**:  
-   - Abre `multi_vlc_installer.iss` en **Inno Setup**.  
-   - Compila presionando `F9`.  
-
-3. **Resultado**:  
-   Se generará el instalador **`MultiVLCManagerSetup.exe`** listo para distribuir.  
+- Para cambiar algo, edita `multi_vlc.ps1` y súbelo a GitHub. En la PC de la iglesia, repite los pasos de instalación.
+- Para probar un cambio sin instalar: `powershell -ExecutionPolicy Bypass -File .\multi_vlc.ps1`
+- Guarda los archivos `.ps1` como **UTF-8 con BOM** (en VS Code: "Save with Encoding" → "UTF-8 with BOM"). Sin el BOM, Windows PowerShell muestra mal los acentos (por ejemplo "NÃºmero" en lugar de "Número").
 
 ---
 
 ## 📦 **Estructura del Proyecto**
 ```plaintext
 Multi VLC Manager/
-├── Multi_vlc.exe                # Ejecutable principal
-├── multi_vlc_icon.ico           # Icono personalizado para la aplicación
-├── multi_vlc_installer.iss             # Script de Inno Setup
+├── multi_vlc.ps1                # La aplicación
+├── Instalar.cmd                 # Doble clic para instalar o actualizar
+├── instalar.ps1                 # Lógica de instalación (copia archivos y crea accesos directos)
+├── assets/multi_vlc_icon.ico    # Icono de la aplicación
 ├── README.md                    # Este archivo
 ```
 
 ---
 
 ## 🧩 **Desinstalación**
-- Para desinstalar la aplicación, usa:
-   - **"Desinstalar Multi VLC Manager"** en el menú Inicio.
-   - O desde **Panel de Control > Programas y características**.
+Borra el acceso directo **Multi VLC Manager** del escritorio y del menú Inicio, y la carpeta `%LOCALAPPDATA%\MultiVLCManager` (pégala en la barra de direcciones del Explorador de archivos).
 
 ---
 
