@@ -1,6 +1,16 @@
-# Añadir ensamblados necesarios para Windows Forms y Drawing
+﻿# Añadir ensamblados necesarios para Windows Forms, Drawing y HTTP
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
+Add-Type -AssemblyName System.Net.Http
+
+# Configuración
+$PuertoBase = 8080          # La ventana 1 usa 8080, la 2 usa 8081, etc.
+$HttpPassword = "admin"     # Contraseña de la interfaz HTTP local de VLC
+$VentanasPorDefecto = 3
+$VentanasMaximo = 8
+
+# Ventanas de VLC abiertas por esta aplicación (proceso + puerto)
+$script:Instancias = @()
 
 # Función para obtener la ruta de VLC dinámicamente
 function Get-VLCPath {
@@ -29,7 +39,7 @@ function Get-VLCPath {
             "VLC No Encontrado",
             [System.Windows.Forms.MessageBoxButtons]::OK,
             [System.Windows.Forms.MessageBoxIcon]::Error
-        )
+        ) | Out-Null
         Start-Process "https://www.videolan.org/vlc/index.html"
         return $null
     }
@@ -37,10 +47,34 @@ function Get-VLCPath {
     return $VLCPath
 }
 
-# Función para abrir 3 instancias de VLC
+# Devuelve las ventanas abiertas por esta aplicación que siguen en ejecución
+function Get-InstanciasActivas {
+    return @($script:Instancias | Where-Object { -not $_.Proceso.HasExited })
+}
+
+# Función para abrir N instancias de VLC
 function AbrirVentanasVLC {
+    param([int]$Cantidad)
+
     $VLCPath = Get-VLCPath
     if (-not $VLCPath) { return } # Si VLC no está, salir.
+
+    # Si quedan ventanas abiertas de antes, sus puertos chocarían con las nuevas
+    $activas = Get-InstanciasActivas
+    if ($activas.Count -gt 0) {
+        $respuesta = [System.Windows.Forms.MessageBox]::Show(
+            "Hay $($activas.Count) ventana(s) de VLC abiertas. ¿Cerrarlas y abrir $Cantidad nuevas?",
+            "Ventanas ya abiertas",
+            [System.Windows.Forms.MessageBoxButtons]::YesNo,
+            [System.Windows.Forms.MessageBoxIcon]::Question
+        )
+        if ($respuesta -ne 'Yes') { return }
+        foreach ($instancia in $activas) {
+            try { $instancia.Proceso.Kill() } catch { }
+        }
+        Start-Sleep -Milliseconds 500 # Dar tiempo a VLC para liberar los puertos
+    }
+    $script:Instancias = @()
 
     # Abrir el explorador de archivos para seleccionar un archivo de video
     $OpenFileDialog = New-Object System.Windows.Forms.OpenFileDialog
@@ -50,11 +84,12 @@ function AbrirVentanasVLC {
 
     if ($result -eq 'OK') {
         $VideoFilePath = $OpenFileDialog.FileName
-        for ($i = 1; $i -le 3; $i++) {
-            $port = 8080 + $i - 1
-            $VLCExecutable = Join-Path -Path $VLCPath -ChildPath "vlc.exe"
-            Start-Process $VLCExecutable -ArgumentList "--no-one-instance --no-playlist-enqueue --intf qt --start-paused --extraintf http --http-port=$port --http-password=admin `"$VideoFilePath`"" -PassThru
-            Start-Sleep -Seconds 0.2
+        $VLCExecutable = Join-Path -Path $VLCPath -ChildPath "vlc.exe"
+        for ($i = 0; $i -lt $Cantidad; $i++) {
+            $port = $PuertoBase + $i
+            $proceso = Start-Process $VLCExecutable -ArgumentList "--no-one-instance --no-playlist-enqueue --intf qt --start-paused --extraintf http --http-port=$port --http-password=$HttpPassword `"$VideoFilePath`"" -PassThru
+            $script:Instancias += [pscustomobject]@{ Proceso = $proceso; Puerto = $port }
+            Start-Sleep -Milliseconds 200
         }
     } else {
         [System.Windows.Forms.MessageBox]::Show(
@@ -62,56 +97,105 @@ function AbrirVentanasVLC {
             "Archivo no seleccionado",
             [System.Windows.Forms.MessageBoxButtons]::OK,
             [System.Windows.Forms.MessageBoxIcon]::Warning
-        )
+        ) | Out-Null
     }
+}
+
+# Envía la misma petición a todas las ventanas a la vez y devuelve los puertos que fallaron.
+# Todas las peticiones salen antes de esperar ninguna respuesta, así ninguna ventana
+# espera a que la anterior conteste.
+function Invoke-ComandoVLC {
+    param([int[]]$Puertos, [string]$Consulta)
+
+    $handler = New-Object System.Net.Http.HttpClientHandler
+    $handler.UseProxy = $false # La detección automática de proxy añade retrasos
+    $client = New-Object System.Net.Http.HttpClient($handler)
+    $client.Timeout = [TimeSpan]::FromSeconds(3)
+    $encodedCredentials = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$HttpPassword"))
+    $client.DefaultRequestHeaders.Authorization = New-Object System.Net.Http.Headers.AuthenticationHeaderValue("Basic", $encodedCredentials)
+
+    $tareas = @{}
+    foreach ($port in $Puertos) {
+        $tareas[$port] = $client.GetAsync("http://localhost:$port/requests/status.xml$Consulta")
+    }
+
+    $fallidos = @()
+    foreach ($port in $Puertos) {
+        try {
+            $respuesta = $tareas[$port].GetAwaiter().GetResult()
+            if (-not $respuesta.IsSuccessStatusCode) { $fallidos += $port }
+        } catch {
+            $fallidos += $port
+        }
+    }
+    $client.Dispose()
+    return $fallidos
 }
 
 # Función para reproducir los videos
 function ReproducirVideos {
-    for ($i = 1; $i -le 3; $i++) {
-        $port = 8080 + $i - 1
-        $uri = "http://localhost:$port/requests/status.xml?command=pl_play"
+    param([int]$CantidadPorDefecto)
 
-        $pair = ":admin"
-        $encodedCredentials = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes($pair))
+    $puertos = @(Get-InstanciasActivas | ForEach-Object { $_.Puerto })
+    if ($puertos.Count -eq 0) {
+        # Ventanas abiertas en una sesión anterior de la aplicación: usar el número elegido
+        $puertos = @(0..($CantidadPorDefecto - 1) | ForEach-Object { $PuertoBase + $_ })
+    }
 
-        $headers = @{
-            Authorization = "Basic $encodedCredentials"
-        }
-        try {
-            Invoke-WebRequest -Uri $uri -Headers $headers -Method Get
-        } catch {
-            [System.Windows.Forms.MessageBox]::Show(
-                "Error al conectar con VLC en el puerto $port. Asegúrese de que VLC esté abierto.",
-                "Error de Conexión",
-                [System.Windows.Forms.MessageBoxButtons]::OK,
-                [System.Windows.Forms.MessageBoxIcon]::Error
-            )
-        }
+    # Primero comprobar qué ventanas responden, para que el "play" llegue a todas a la vez
+    $sinRespuesta = @(Invoke-ComandoVLC -Puertos $puertos -Consulta "")
+    $disponibles = @($puertos | Where-Object { $sinRespuesta -notcontains $_ })
+
+    if ($disponibles.Count -gt 0) {
+        $sinRespuesta += @(Invoke-ComandoVLC -Puertos $disponibles -Consulta "?command=pl_play")
+    }
+
+    if ($sinRespuesta.Count -gt 0) {
+        [System.Windows.Forms.MessageBox]::Show(
+            "Error al conectar con VLC en el/los puerto(s) $($sinRespuesta -join ', '). Asegúrese de que VLC esté abierto.",
+            "Error de Conexión",
+            [System.Windows.Forms.MessageBoxButtons]::OK,
+            [System.Windows.Forms.MessageBoxIcon]::Error
+        ) | Out-Null
     }
 }
 
 # Crear un formulario
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "Multi VLC Manager"
-$form.Size = New-Object System.Drawing.Size(300, 150)
+$form.Size = New-Object System.Drawing.Size(320, 150)
 $form.StartPosition = "CenterScreen"
+
+# Selector del número de ventanas
+$labelCantidad = New-Object System.Windows.Forms.Label
+$labelCantidad.Location = New-Object System.Drawing.Point(30, 22)
+$labelCantidad.Size = New-Object System.Drawing.Size(130, 20)
+$labelCantidad.Text = "Número de ventanas:"
+$form.Controls.Add($labelCantidad)
+
+$numCantidad = New-Object System.Windows.Forms.NumericUpDown
+$numCantidad.Location = New-Object System.Drawing.Point(160, 20)
+$numCantidad.Size = New-Object System.Drawing.Size(60, 20)
+$numCantidad.Minimum = 1
+$numCantidad.Maximum = $VentanasMaximo
+$numCantidad.Value = $VentanasPorDefecto
+$form.Controls.Add($numCantidad)
 
 # Botón para abrir ventanas de VLC
 $buttonOpen = New-Object System.Windows.Forms.Button
-$buttonOpen.Location = New-Object System.Drawing.Point(30, 20)
+$buttonOpen.Location = New-Object System.Drawing.Point(30, 55)
 $buttonOpen.Size = New-Object System.Drawing.Size(120, 30)
 $buttonOpen.Text = "Abrir Ventanas VLC"
-$buttonOpen.Add_Click({ AbrirVentanasVLC })
+$buttonOpen.Add_Click({ AbrirVentanasVLC -Cantidad ([int]$numCantidad.Value) })
 $form.Controls.Add($buttonOpen)
 
 # Botón para reproducir videos
 $buttonPlay = New-Object System.Windows.Forms.Button
-$buttonPlay.Location = New-Object System.Drawing.Point(160, 20)
+$buttonPlay.Location = New-Object System.Drawing.Point(160, 55)
 $buttonPlay.Size = New-Object System.Drawing.Size(120, 30)
 $buttonPlay.Text = "Reproducir Videos"
-$buttonPlay.Add_Click({ ReproducirVideos })
+$buttonPlay.Add_Click({ ReproducirVideos -CantidadPorDefecto ([int]$numCantidad.Value) })
 $form.Controls.Add($buttonPlay)
 
 # Mostrar el formulario
-$form.ShowDialog()
+[void]$form.ShowDialog()

@@ -1,0 +1,4 @@
+# Windows PowerShell 5.1 needs the UTF-8 BOM to read accents correctly; keep these files byte-for-byte.
+*.ps1 -text
+# Batch files must keep CRLF line endings.
+*.cmd -text
